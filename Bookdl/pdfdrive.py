@@ -1,46 +1,42 @@
-''' Contains functions to search and download the book '''
-
-import sys
+from asyncio import run
 import re
-import cloudscraper
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from termcolor import colored
-from . import books, save
-from . import logger
+from Bookdl.save import save
 
-logger = logger.logger()
-scraper = cloudscraper.create_scraper()
-
-def search(book_name, book):
+async def search(book_name):
     '''
     Function to search for related books and save the
     results in books dictionary
     '''
-
-    print("searching for " + colored(book_name, "green", attrs=['bold']))
+    book = {}
+    
     url = "https://www.pdfdrive.com/search?q={}".format(book_name)
-    source = scraper.get(url)
-    soup = BeautifulSoup(source.content, 'html5lib')
+    async with ClientSession() as session:
+        async with session.get(url) as response:
+            source = await response.text()
+    soup = BeautifulSoup(source, 'html5lib')
     results = soup.findAll('a', attrs={'class': 'ai-search'})
 
     for i, result in enumerate(results):
         title = result.find('h2').text
         link = result['href']
-        book.add(i, title, link)
+        book[i] = (title, link)
+    return book
 
-
-def download(title, url, ext):
+async def download(title, url, ext):
     '''Using selenium driver here to get the download link.'''
 
     url = "https://www.pdfdrive.com" + url
-    resp = scraper.get(url)
-    soup = BeautifulSoup(resp.content, 'html5lib')
+
+    async with ClientSession() as session:
+        async with session.get(url) as response:
+            resp = await response.text()
+    soup = BeautifulSoup(resp, 'html5lib')
 
     bookId = soup.find('button', attrs={'id': 'previewButtonMain'})['data-id']
     session = re.findall(r'session=(.+?)"', str(soup))[0]
-    logger.debug(bookId)
-    logger.debug(session)
 
     url = "https://www.pdfdrive.com/download.pdf"
     parameters = {'id': bookId, 'h': session, 'ext': ext}
-    save.save(title, url, parameters)
+    await save(title, url, parameters)
