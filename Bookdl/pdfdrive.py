@@ -38,8 +38,10 @@ async def genereate_url(url):
 
     file_info = soup.find('div', attrs={'class': 'ebook-file-info'})
     info = [x.get_text() for x in file_info.findAll('span', attrs={'class': 'info-green'})]
-
-    bookId = soup.find('button', attrs={'id': 'previewButtonMain'})['data-id']
+    try:
+        bookId = soup.find('button', attrs={'id': 'previewButtonMain'})['data-id']
+    except:
+        raise Exception("Kitob topilmadi!")
     session = findall(r'session=(.+?)"', str(soup))[0]
 
     url = "https://www.pdfdrive.com/download.pdf?"

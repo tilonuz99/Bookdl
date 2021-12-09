@@ -52,8 +52,12 @@ async def down_lib(client: Client, query: CallbackQuery):
     if get_book.file_id is not None:
         await client.send_document(user_id, get_book.file_id, caption=get_book.title)
         return
-    book_url, file_info = await genereate_url(get_book.book_url)
-    
+    try:
+        book_url, file_info = await genereate_url(get_book.book_url)
+    except:
+        await query.answer("Ushbu kitob mualliflik huquqi tufayli o'chirib tashlangan!", True)
+        return
+        
     file_size, size_type = file_info[2].split(" ")[0], file_info[2].split(" ")[1]
     file_size = float(file_size.replace(',', '.'))
 
