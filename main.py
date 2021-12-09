@@ -1,27 +1,37 @@
-from Bookdl.pdfdrive import search
+from os import system
 
-from aiogram import Dispatcher, Bot, executor, types
+from hashlib import md5
+
+from pyrogram import Client, idle
+
+from tortoise import Tortoise, run_async
+
+from database.model import connect_database
 
 
+APP_ID = 448835
+API_HASH = "13c1afbfbcf7dd8480c4c58a08bf0011"
 API_TOKEN = "1375519356:AAHutkxbBk6oe5Cl7IoDIye8Fm5ddZevfc4"
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+
+client = Client(
+    "booksearch",
+    bot_token=API_TOKEN,
+    api_id=APP_ID,
+    api_hash=API_HASH,
+    plugins=dict(root="plugins")
+)
 
 
-@dp.message_handler(commands=['start', 'help'])
-async def send_welcome(message: types.Message):
-    await message.reply("Kitoblar olami)")
+async def startup():
+    await client.start()
+    await connect_database()
+    await idle()
+    system('clear')
 
-@dp.message_handler(content_types='text', chat_type='private')
-async def search_book(message: types.Message):
-    results = await search(message.text)
-    searched_results = "Natijalar: \n\n"
-    i = 0
-    for x, result in enumerate(results.values()):
-        title, url = result
-        i += 1
-        searched_results += f"{i}. <b>{title}</b>\n"
-    await message.reply(searched_results, parse_mode='html')
 
-executor.start_polling(dp)
+if __name__ == "__main__":
+    try:
+        run_async(startup())
+    except KeyboardInterrupt:
+        Tortoise.close_connections()
